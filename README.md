@@ -15,3 +15,5 @@ Generation
 2. Text Generation
 3. Audio Generation
 
+TODO
+1. create pref folder for each folder

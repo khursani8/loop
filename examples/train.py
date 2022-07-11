@@ -1,5 +1,5 @@
 from utili.loops.multiclass import train_once,validate_once,get_preds
-from utili import factory,utils
+from utili import factory,utils,optimizers
 from torch.backends import cudnn
 import numpy as np
 import os
@@ -39,8 +39,16 @@ ema = EMA(
 )
 
 ## get optimizer
-plist = [{'params': model.parameters(), 'lr': cfg.optim.lr, 'weight_decay': cfg.optim.weight_decay}]
-optimizer = factory.get_optimizer(cfg.optim)(plist)
+if cfg.sam_optimizer:
+    print(f'optimizer: SAM and {cfg.optim.name}')
+    plist = [{'params': model.parameters(), 'lr': cfg.optim.lr, 'weight_decay': cfg.optim.weight_decay}]
+    #base_optimizer = factory.get_optimizer(cfg.optim)(plist)
+    base_optimizer = torch.optim.AdamW
+    optimizer = optimizers.SAM(model.parameters(), base_optimizer, lr=cfg.optim.lr, weight_decay=cfg.optim.weight_decay)
+else:
+    print(f'optimizer: {cfg.optim.name}')
+    plist = [{'params': model.parameters(), 'lr': cfg.optim.lr, 'weight_decay': cfg.optim.weight_decay}]
+    optimizer = factory.get_optimizer(cfg.optim)(plist)
 
 ## get loss
 loss_func = factory.get_loss(cfg.loss)
