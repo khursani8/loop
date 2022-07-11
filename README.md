@@ -1,5 +1,3 @@
-BYOL - Bring Your Own Loop
-
 Utility code for me to work on project easily
 
 Classifcation

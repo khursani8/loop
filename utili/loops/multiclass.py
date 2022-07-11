@@ -2,14 +2,19 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from accelerate import Accelerator
-accelerator = Accelerator()
+accelerator = Accelerator(mixed_precision="fp16")
 
-def train_once(cfg,data,model,optimizer,loss_func,scheduler=None):
+def train_once(cfg,data,model,optimizer,loss_func,scheduler=None,ema=None):
     losses = []
     model.train()
     model, optimizer, data = accelerator.prepare(model, optimizer, data)
     tbar = tqdm(enumerate(data),total=len(data))
     for batch_idx, batch in tbar:
+        cfg.iter += 1
+        if cfg.unfreeze_iter == cfg.iter:
+            for params in model.parameters():
+                params.requires_grad = True
+            print("unfreeze model")
         images = batch["image"]
         targets = batch["target"]
 
@@ -20,16 +25,17 @@ def train_once(cfg,data,model,optimizer,loss_func,scheduler=None):
         outputs = model(images)
         loss = loss_func(outputs, targets)
         l = loss.item()
+        losses.append(l)
+
+        accelerator.backward(loss)
+        optimizer.step()
+        scheduler.step()
+        ema.update()
         out = {"loss":l}
         if scheduler:
             lr = scheduler.get_last_lr()[0]
             out["lr"] = round(lr,6)
         tbar.set_postfix(out)
-        losses.append(l)
-
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
     return {
         "losses":losses
     }

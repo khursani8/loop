@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score
 Path('output/ensemble').mkdir(parents=True,exist_ok=True)
 
 pref = 'paddy'
-versions = ["01","02"]
+versions = ["01","02","03","04"]
 
 classes = ['bacterial_leaf_blight', 'bacterial_leaf_streak', 'bacterial_panicle_blight', 'blast', 'brown_spot', 'dead_heart', 'downy_mildew', 'hispa', 'normal', 'tungro']
 
@@ -46,18 +46,16 @@ print(sub.head())
 
 
 params = {
-    # 'objective': 'accuracy',
-    # 'metrics': 'accuracy',
+    'objective': 'cross_entropy',
+    # 'metrics': 'cross_entropy',
     'n_estimators': 10000,
     'boosting_type': 'gbdt',
     'num_leaves': 32,
-    'max_depth': 2,
+    'max_depth': 5,
     'learning_rate': 0.01,
     'feature_fraction': 0.8,
     'bagging_fraction': 0.3,
     'bagging_freq': 5,
-    'reg_alpha': 0.5,
-    'reg_lambda': 0,
 }
 
 stacking_oof = np.zeros(len(oof))
@@ -84,7 +82,8 @@ for fold in range(n_fold):
 
     tst_x = sub[features]
 
-    model = LGBMClassifier()
+    # model = LGBMClassifier()
+    model = LGBMClassifier(**params)
     model.fit(trn_x, trn_y,
              eval_set=[(val_x, val_y)],
              verbose=100, early_stopping_rounds=200)
@@ -96,7 +95,6 @@ for fold in range(n_fold):
 
 
 oof.pred = stacking_oof
-oof.pred = np.clip(oof.pred.values, 0.0, float(10))
 print(oof.pred)
 score = np.sqrt(accuracy_score(oof.target.values, oof.pred.values))
 print(f'{score:.6f}')
