@@ -1,11 +1,11 @@
 import numpy as np
-from numpy.lib.function_base import average
 import pandas as pd
 from pathlib import Path
 import os
-from sklearn.metrics import f1_score, accuracy_score
+from sklearn.metrics import roc_auc_score, mean_squared_error
 import argparse
 from utili import utils
+
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -19,7 +19,7 @@ args = get_args()
 cfg = utils.Config.fromfile(args.config)
 
 version = args.version
-folds = [0,1,2,3,4]
+folds = list(range(5))
 
 sub = pd.read_csv("input/sample_submission.csv")
 pred = np.zeros((len(sub), cfg.model.num_classes))
@@ -44,18 +44,31 @@ for fold in folds:
     _oof = pd.read_csv(f'output/{version}/{fold}/{oof_cls_name[0]}')
     oof_cls = pd.concat([oof_cls, _oof], axis=0)
 
+def get_pred(pred):
+    return np.array([(x*range(cfg.model.num_classes)).mean() for x in pred])
 cols = [f"conf_{i}" for i in range(10)]
 oof.columns = cols
-
+print(oof)
 _oof = oof.copy()
-
-_oof['pred'] = np.argmax(_oof.values, axis=1)
+_oof.conf_0 *= 0
+_oof.conf_1 *= 1
+_oof.conf_2 *= 2
+_oof.conf_3 *= 3
+_oof.conf_4 *= 4
+_oof.conf_5 *= 5
+_oof.conf_6 *= 6
+_oof.conf_7 *= 7
+_oof.conf_8 *= 8
+_oof.conf_9 *= 9
+_oof['pred'] = np.sum(_oof.values, axis=1)
 
 oof_pred = _oof.pred.values
 oof_target = oof_cls.target
 
+print(oof_pred.shape, oof_target.shape)
+
 assert len(oof)==len(train)
-score = f1_score(oof_target, oof_pred, average='micro')
+score = np.sqrt(mean_squared_error(oof_target, oof_pred))
 print(score)
 
 oof_cls.pred = oof_pred
@@ -63,7 +76,8 @@ oof_cls = pd.concat([oof_cls, oof], axis=1)
 
 pred /= len(folds)
 
-sub["target"] = np.argmax(pred, axis=1)
+sub["target"] = (pred * range(cfg.model.num_classes)).sum(axis=1)
+print(sub.target)
 
 sub[cols] = pred
 sub[['target']+cols].to_csv(f'output/sub_{version}.csv', index=False)

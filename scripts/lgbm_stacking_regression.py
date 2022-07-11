@@ -7,13 +7,11 @@ from sklearn.metrics import mean_squared_error
 
 Path('output/ensemble').mkdir(parents=True,exist_ok=True)
 
-pref = '10'
+pref = 'paddy'
 versions = ["01"]
 
 sort_by = "path"
-
-n_cols = 10
-cols = [f"conf_{i}" for i in range(n_cols)]
+cols = [f"conf_{i}" for i in range(10)]
 
 for i, version in enumerate(versions):
     oof_name = [x for x in os.listdir(f'output/') if f'oof_{version}' in x]
@@ -21,7 +19,6 @@ for i, version in enumerate(versions):
 
     if i==0:
         oof = pd.read_csv(f'output/{oof_name[0]}').sort_values(sort_by)
-
         oof[f'pred_{i}'] = oof.pred.values
         oof[cols] = 0
 
@@ -32,13 +29,13 @@ for i, version in enumerate(versions):
     else:
         _tmp = pd.read_csv(f'output/{oof_name[0]}').sort_values(sort_by)
         oof[f'pred_{i}'] = _tmp.pred.values
-        # if version in ['081', '082']:
-        #     oof[cols] += 0.5*_tmp[cols].values
+        if version in ['081', '082']:
+            oof[cols] += 0.5*_tmp[cols].values
 
         _tmp = pd.read_csv(f'output/sub_{version}.csv')
         sub[f'pred_{i}'] = _tmp.target.values
-        # if version in ['081', '082']:
-        #     sub[cols] += 0.5*_tmp[cols].values
+        if version in ['081', '082']:
+            sub[cols] += 0.5*_tmp[cols].values
 
 oof = oof.reset_index(drop=True)
 
@@ -89,21 +86,21 @@ for fold in range(n_fold):
     model.fit(trn_x, trn_y, eval_metric='rmse',
              eval_set=[(val_x, val_y)],
              verbose=100, early_stopping_rounds=200)
-    
+
     val_pred = model.predict(val_x)
     stacking_sub += model.predict(tst_x)
-    
+
     stacking_oof[val_idx] = val_pred
 
 
 oof.pred = stacking_oof
-oof.pred = np.clip(oof.pred.values, 0.0, float(n_cols-1))
+oof.pred = np.clip(oof.pred.values, 0.0, float(10))
 print(oof.pred)
-score = np.sqrt(accuracy(oof.target.values, oof.pred.values))
+score = np.sqrt(mean_squared_error(oof.target.values, oof.pred.values))
 print(f'{score:.6f}')
 
 stacking_sub = stacking_sub / float(n_fold)
-stacking_sub = np.clip(stacking_sub, 0.0, float(n_cols-1))
+stacking_sub = np.clip(stacking_sub, 0.0, float(10))
 
 sub_name = '_'.join(versions)
 pd.DataFrame(stacking_sub, columns=['target']).to_csv(f'output/ensemble/{pref}_stacking_{sub_name}.csv', index=False)

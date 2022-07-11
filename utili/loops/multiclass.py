@@ -21,6 +21,9 @@ def train_once(cfg,data,model,optimizer,loss_func,scheduler=None):
         loss = loss_func(outputs, targets)
         l = loss.item()
         out = {"loss":l}
+        if scheduler:
+            lr = scheduler.get_last_lr()[0]
+            out["lr"] = round(lr,6)
         tbar.set_postfix(out)
         losses.append(l)
 
@@ -65,6 +68,7 @@ def validate_once(cfg,data,model,loss_func,metric_func):
 
 @torch.no_grad()
 def get_preds(data,model):
+    model.eval()
     preds = []
     model, data = accelerator.prepare(model, data)
     for batch in tqdm(data):

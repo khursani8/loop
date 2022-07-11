@@ -10,6 +10,7 @@ import pandas as pd
 
 args = utils.get_args()
 cfg = utils.Config.fromfile(args.config)
+cfg.version = args.version
 cfg.fold = args.fold
 cfg.working_dir = cfg.output_dir / cfg.version / str(cfg.fold)
 Path(cfg.working_dir).mkdir(parents=True, exist_ok=True)
@@ -88,7 +89,7 @@ preds = get_preds(loader_valid,model)
 sub = pd.read_csv(cfg.valid.data_path)
 sub = sub[sub.fold.isin([cfg.fold])]
 sub['pred'] = preds.argmax(-1)
-score = metric_func(sub.pred.values, sub.target.values)
+score = metric_func(sub.pred.values, sub.target.values,None)
 print(f'oof metric: {score:.4f}')
 sub.to_csv(cfg.working_dir / f'oof_{cfg.version}_{score:.4f}.csv', index=False)
 pd.DataFrame(preds).to_csv(cfg.working_dir / f'oof_{cfg.version}_{score:.4f}_raw.csv', index=False)
@@ -100,5 +101,3 @@ sub = pd.read_csv(cfg.test.data_path)
 sub['target'] = preds.argmax(-1)
 sub[['target']].to_csv(cfg.working_dir / f'sub_{cfg.version}.csv', index=False)
 pd.DataFrame(preds).to_csv(cfg.working_dir / f'sub_{cfg.version}_raw.csv', index=False)
-
-

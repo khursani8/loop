@@ -1,15 +1,4 @@
-from pathlib import Path
-from configs.base import *
-
-dataset_name = "ImageDataset"
-n_fold = 5
-fold = 0
-num_gpu = 1
-gpu = "0"
-n_epochs = 100
-
-input_dir = Path(f'input')
-output_dir = Path(f'output')
+from paddy_base import *
 
 target_size = (224,224) # None=Original size.
 normalize = False
@@ -20,11 +9,9 @@ num_workers = 8
 # model
 model = dict(
     name = 'TimmModel',
-    arch = 'resnet18',
-    pretrained_weight=None,
+    arch = 'resnet18d',
     num_classes = 10,
     params = dict(
-        # pretrained_path='../dino/output/007/checkpoint.pth',
     )
 )
 
@@ -53,7 +40,7 @@ metric = dict(
 scheduler = dict(
     name = 'CosineAnnealingLR',
     params = dict(
-        T_max=n_epochs,
+        T_max=epochs,
         eta_min=0,
         last_epoch=-1,
     )

@@ -33,6 +33,10 @@ test["path"] = test.apply(lambda x:f'{input_dir}/test_images/{x["image_id"]}',ax
 
 labels = sorted(train.label.unique())
 lbl2id = {i:idx for idx,i in enumerate(labels)}
+with open(input_dir / "labels.txt","w+") as o:
+    o.write(str(labels))
+with open(input_dir / "lbl2id.txt","w+") as o:
+    o.write(str(lbl2id))
 train["target"] = train.label.apply(lambda x:lbl2id[x])
 
 test['fold'] = 0

@@ -6,7 +6,10 @@ import torch
 def accuracy(inp, targ, axis=-1):
     "Compute accuracy with `targ` when `pred` is bs * n_classes"
     targ = torch.as_tensor(targ)
-    pred = inp.argmax(axis)
+    if axis is not None:
+        pred = inp.argmax(axis)
+    else:
+        pred = torch.as_tensor(inp)
     return (pred == targ).float().mean()
 
 def error_rate(inp, targ, axis=-1):
