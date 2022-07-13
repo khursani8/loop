@@ -8,7 +8,15 @@ from sklearn.metrics import accuracy_score
 Path('output/ensemble').mkdir(parents=True,exist_ok=True)
 
 pref = 'paddy'
-versions = ["01","02","03","04","05","06"]
+versions = [
+    # "01",
+    "02",
+    # "03",
+    "04",
+    "05",
+    "06",
+    "10"
+]
 
 classes = ['bacterial_leaf_blight', 'bacterial_leaf_streak', 'bacterial_panicle_blight', 'blast', 'brown_spot', 'dead_heart', 'downy_mildew', 'hispa', 'normal', 'tungro']
 

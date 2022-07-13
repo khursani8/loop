@@ -9,6 +9,7 @@ import pandas as pd
 
 from utili.utils.ema import EMA
 
+cudnn.benchmark = False
 args = utils.get_args()
 cfg = utils.Config.fromfile(args.config)
 cfg.version = args.version
@@ -18,7 +19,6 @@ Path(cfg.working_dir).mkdir(parents=True, exist_ok=True)
 utils.fix_random_seeds(cfg.seed)
 print("git:\n  {}\n".format(utils.get_sha()))
 
-cudnn.benchmark = True
 
 ## get data
 folds = [fold for fold in range(cfg.n_fold) if cfg.fold != fold]
@@ -96,7 +96,7 @@ for epoch in range(start_epoch,cfg["epochs"]):
     print(f'{cfg.metric.name}: {emaval_out["metric"]}')
     print("*"*24)
 
-    if emaval_out["metric"] > best_metric:
+    if emaval_out["metric"] >= best_metric:
         best_metric = emaval_out["metric"]
         save_dict = {
             "ema": ema.state_dict(),

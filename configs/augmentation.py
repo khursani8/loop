@@ -1,5 +1,13 @@
 
+
 # augmentations.
+longestmaxresize = dict(
+    name = "LongestMaxSize",
+    params = dict(
+        max_size = 480
+    )
+)
+
 horizontalflip = dict(
     name = 'HorizontalFlip',
     params = dict()
@@ -33,6 +41,13 @@ blur = dict(
     ),
 )
 
+advblur = dict(
+    name = "AdvancedBlur",
+    params = dict(
+
+    )
+)
+
 # randommorph = dict(
 #     name = 'RandomMorph',
 #     params = dict(
@@ -56,7 +71,8 @@ elastictransform = dict(
     params = dict(
         sigma = 50,
         alpha = 1,
-        alpha_affine = 10
+        alpha_affine = 10,
+        p=0.5
     ),
 )
 

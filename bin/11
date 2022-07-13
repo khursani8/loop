@@ -1,0 +1,10 @@
+set -ex
+version=`basename "$0"`
+
+python examples/train.py --config configs/${version}.py --version ${version} --fold 0
+python examples/train.py --config configs/${version}.py --version ${version} --fold 1
+python examples/train.py --config configs/${version}.py --version ${version} --fold 2
+python examples/train.py --config configs/${version}.py --version ${version} --fold 3
+python examples/train.py --config configs/${version}.py --version ${version} --fold 4
+
+python scripts/make_oof.py --version ${version} --config configs/${version}.py

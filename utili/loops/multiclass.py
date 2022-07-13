@@ -2,12 +2,12 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from accelerate import Accelerator
-accelerator = Accelerator(mixed_precision="no")
+accelerator = Accelerator(mixed_precision="no",gradient_accumulation_steps=1)
 
 def train_once(cfg,data,model,optimizer,loss_func,scheduler=None,ema=None):
     losses = []
     model.train()
-    model, data = accelerator.prepare(model, data)
+    model, data,optimizer = accelerator.prepare(model, data,optimizer)
     tbar = tqdm(enumerate(data),total=len(data))
     for batch_idx, batch in tbar:
         cfg.iter += 1
@@ -29,10 +29,10 @@ def train_once(cfg,data,model,optimizer,loss_func,scheduler=None,ema=None):
 
         accelerator.backward(loss)
         if cfg.sam_optimizer:
-            optimizer.first_step(zero_grad=True)
+            optimizer.optimizer.first_step(zero_grad=True)
             outputs = model(images)
             loss_func(outputs, targets).backward()
-            optimizer.second_step(zero_grad=True)
+            optimizer.optimizer.second_step(zero_grad=True)
         else:
             optimizer.step()
         scheduler.step()
