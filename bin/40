@@ -1,0 +1,4 @@
+set -ex
+version=`basename "$0"`
+
+python examples/nemo.py --config configs/${version}.py --version ${version} --fold 0
