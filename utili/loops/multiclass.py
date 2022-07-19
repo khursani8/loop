@@ -2,9 +2,19 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from accelerate import Accelerator
-accelerator = Accelerator(mixed_precision="no",gradient_accumulation_steps=1)
+accelerator = Accelerator(mixed_precision="fp16",gradient_accumulation_steps=1)
 
-def train_once(cfg,data,model,optimizer,loss_func,scheduler=None,ema=None):
+clip_percentile = 10
+def _get_grad_norm(model):
+    total_norm = 0
+    for p in model.parameters():
+        if p.grad is not None:
+            param_norm = p.grad.data.norm(2)
+            total_norm += param_norm.item() ** 2
+    total_norm = total_norm ** (1. / 2)
+    return total_norm
+
+def train_once(cfg,data,model,optimizer,loss_func,grad_history,scheduler=None,ema=None):
     losses = []
     model.train()
     model, data,optimizer = accelerator.prepare(model, data,optimizer)
@@ -28,6 +38,12 @@ def train_once(cfg,data,model,optimizer,loss_func,scheduler=None,ema=None):
         losses.append(l)
 
         accelerator.backward(loss)
+        obs_grad_norm = _get_grad_norm(model)
+        grad_history.append(obs_grad_norm)
+        if len(grad_history) > 150:
+            clip_value = np.percentile(grad_history, clip_percentile)
+            torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=clip_value)
+
         if cfg.sam_optimizer:
             optimizer.optimizer.first_step(zero_grad=True)
             outputs = model(images)
@@ -43,7 +59,8 @@ def train_once(cfg,data,model,optimizer,loss_func,scheduler=None,ema=None):
             out["lr"] = round(lr,6)
         tbar.set_postfix(out)
     return {
-        "losses":losses
+        "losses":losses,
+        "grad_history":grad_history
     }
 
 
@@ -69,8 +86,8 @@ def validate_once(cfg,data,model,loss_func,metric_func):
         tbar.set_postfix(out)
         losses.append(l)
 
-    preds = torch.cat(preds)
-    labels = torch.cat(labels)
+    preds = torch.cat(preds).cpu().numpy()
+    labels = torch.cat(labels).cpu().numpy()
     metric = metric_func(preds,labels)
 
     return {

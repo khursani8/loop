@@ -1,0 +1,5 @@
+librosa
+SoundFile
+pqdm
+jiwer
+nnAudio

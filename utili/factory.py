@@ -33,9 +33,11 @@ def get_transforms(cfg):
 def get_dataset(cfg, folds, transforms):
     return eval(cfg.dataset_name)(cfg, folds, transforms)
 
-
 def get_dataset_loader(cfg, folds):
-    transforms = get_transforms(cfg)
+    if "transform" in cfg:
+        transforms = get_transforms(cfg)
+    else:
+        transforms = None
     dataset = get_dataset(cfg, folds, transforms)
     loader = DataLoader(dataset, **cfg.loader)
     return dataset, loader
@@ -65,11 +67,7 @@ def get_loss(cfg):
     return loss
 
 def get_metric(cfg):
-    if hasattr(nn, cfg.name):
-        loss = getattr(nn, cfg.name)(**cfg.params)
-    else:
-        loss = eval(cfg.name)
-    return loss
+    return eval(cfg.name)(**cfg.params)
 
 
 def get_scheduler(cfg, optimizer):

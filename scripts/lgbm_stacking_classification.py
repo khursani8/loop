@@ -3,25 +3,32 @@ import pandas as pd
 from pathlib import Path
 import os
 from lightgbm import LGBMClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score,f1_score
+
 
 Path('output/ensemble').mkdir(parents=True,exist_ok=True)
 
-pref = 'paddy'
-versions = [
-    # "01",
-    "02",
-    # "03",
-    "04",
-    "05",
-    "06",
-    "10"
-]
+# pref = 'paddy'
+# versions = [
+#     # "01",
+#     # "02",
+#     # "03",
+#     "04",
+#     "05",
+#     "06",
+#     "10",
+#     "12",
+#     "13",
+# ]
 
-classes = ['bacterial_leaf_blight', 'bacterial_leaf_streak', 'bacterial_panicle_blight', 'blast', 'brown_spot', 'dead_heart', 'downy_mildew', 'hispa', 'normal', 'tungro']
+# classes = ['bacterial_leaf_blight', 'bacterial_leaf_streak', 'bacterial_panicle_blight', 'blast', 'brown_spot', 'dead_heart', 'downy_mildew', 'hispa', 'normal', 'tungro']
+
+versions = ["32"]
+pref = "face"
+classes = ['Acting', 'Archery', 'Calligraphy', 'Coffee', 'Coloring', 'Cryptography', 'Cycling', 'Dance', 'Drama', 'Drawing', 'Electronics', 'Embroidery', 'Fashion', 'Gaming', 'Language', 'Magic', 'Origami', 'Painting', 'Pet', 'Pottery', 'Programming', 'Puzzles', 'Reading', 'Sculpting', 'Sewing', 'Singing', 'Skating', 'Sketching', 'Sports', 'Sudoku', 'Vacation', 'Writing', 'Yoga', 'scrapbook', 'television']
 
 sort_by = "path"
-cols = [f"conf_{i}" for i in range(10)]
+cols = [f"conf_{i}" for i in range(len(classes))]
 
 for i, version in enumerate(versions):
     oof_name = [x for x in os.listdir(f'output/') if f'oof_{version}' in x]
@@ -59,7 +66,9 @@ params = {
     'n_estimators': 10000,
     'boosting_type': 'gbdt',
     'num_leaves': 32,
-    'max_depth': 5,
+    # 'max_depth': -1,
+    # 'min_data_in_leaf': 10,
+    'verbosity': -1,
     'learning_rate': 0.01,
     'feature_fraction': 0.8,
     'bagging_fraction': 0.3,
@@ -74,6 +83,7 @@ features.extend(cols)
 print(features)
 
 n_fold = 5
+
 
 for fold in range(n_fold):
     print(f'{fold=}')
@@ -92,9 +102,8 @@ for fold in range(n_fold):
 
     # model = LGBMClassifier()
     model = LGBMClassifier(**params)
-    model.fit(trn_x, trn_y,
-             eval_set=[(val_x, val_y)],
-             verbose=100, early_stopping_rounds=200)
+    model.fit(trn_x, trn_y,eval_set=[(val_x, val_y)],early_stopping_rounds=200)
+    # model.fit(trn_x, trn_y,eval_set=[(trn_x, trn_y)],early_stopping_rounds=200)
 
     val_pred = model.predict(val_x)
     stacking_sub += model.predict(tst_x)
@@ -104,15 +113,15 @@ for fold in range(n_fold):
 
 oof.pred = stacking_oof
 print(oof.pred)
-score = np.sqrt(accuracy_score(oof.target.values, oof.pred.values))
+score = np.sqrt(f1_score(oof.target.values, oof.pred.values,average="micro"))
 print(f'{score:.6f}')
 
 stacking_sub = [classes[int(i)] for i in stacking_sub / float(n_fold)]
 
 sub_name = '_'.join(versions)
 
-sample_sub = pd.read_csv("input/sample_submission.csv")
-sample_sub["label"] = stacking_sub
+sample_sub = pd.read_csv(f"input/{pref}/sample_submission.csv")
+sample_sub["hobbies"] = stacking_sub
 sample_sub.to_csv(f'output/ensemble/{pref}_stacking_{sub_name}.csv', index=False)
 # pd.DataFrame([sample_sub.image_id.values,stacking_sub], columns=['image_id','label']).to_csv(f'output/ensemble/{pref}_stacking_{sub_name}.csv', index=False)
 oof.to_csv(f'output/ensemble/{pref}_oof_stacking_{sub_name}.csv', index=False)

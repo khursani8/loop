@@ -1,4 +1,1 @@
 accelerate
-opencv-contrib-python
-albumentations
-timm
